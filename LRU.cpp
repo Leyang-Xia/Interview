@@ -29,7 +29,7 @@ public:
         head->next = tail;
         tail->prev = head;
     }
-    
+
     int get(int key) {
         if (!hash.count(key)) {
             return -1;
@@ -39,7 +39,7 @@ public:
             return node->value;
         }
     }
-    
+
     void put(int key, int value) {
         if (!hash.count(key)) {
             LinkedNode* node = new LinkedNode(key, value);
@@ -104,8 +104,8 @@ void testLRUCache() {
 
     // 插入新数据，导致键 2 被移除
     cache.put(4, 4);
-    assert(cache.get(2) == -1);  // 返回 -1，因为键 2 已经被移除
-    assert(cache.get(3) == 3);   // 返回 3
+    assert(cache.get(2) == 2);  // 返回 2，因为键 2 被访问后移到头部
+    assert(cache.get(3) == -1);   // 返回 -1, 因为键 3 已经被移除
     assert(cache.get(4) == 4);   // 返回 4
 }
 
@@ -114,4 +114,3 @@ int main() {
     std::cout << "All test cases passed!" << std::endl;
     return 0;
 }
-
