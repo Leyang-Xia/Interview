@@ -1,118 +1,72 @@
 #include <iostream>
 #include <vector>
-#include <optional>
-#include <functional>
+#include <list>
+#include <string>
 
-template<typename K, typename V>
-class HashTable {
+class SimpleHashTable {
 private:
-    struct Entry {
-        K key;
-        V value;
-        bool is_occupied;
-        bool is_deleted;
+    static const int TABLE_SIZE = 10;
+    std::vector<std::list<std::pair<std::string, int>>> table;
 
-        Entry() : is_occupied(false), is_deleted(false) {}
-    };
-
-    std::vector<Entry> table;
-    size_t size;
-    size_t capacity;
-    static constexpr float LOAD_FACTOR = 0.7f;
-
-    size_t hash(const K& key) const {
-        return std::hash<K>{}(key) % capacity;
-    }
-
-    void resize() {
-        size_t old_capacity = capacity;
-        capacity *= 2;
-        std::vector<Entry> new_table(capacity);
-        for (const auto& entry : table) {
-            if (entry.is_occupied && !entry.is_deleted) {
-                size_t index = hash(entry.key);
-                while (new_table[index].is_occupied) {
-                    index = (index + 1) % capacity;
-                }
-                new_table[index] = entry;
-            }
+    int hash(const std::string& key) {
+        int sum = 0;
+        for (char c : key) {
+            sum += c;
         }
-        table = std::move(new_table);
+        return sum % TABLE_SIZE;
     }
 
 public:
-    HashTable(size_t initial_capacity = 16) 
-        : table(initial_capacity), size(0), capacity(initial_capacity) {}
+    SimpleHashTable() : table(TABLE_SIZE) {}
 
-    void insert(const K& key, const V& value) {
-        if (static_cast<float>(size) / capacity >= LOAD_FACTOR) {
-            resize();
-        }
-
-        size_t index = hash(key);
-        while (table[index].is_occupied) {
-            if (table[index].key == key && !table[index].is_deleted) {
-                table[index].value = value;
+    void insert(const std::string& key, int value) {
+        int index = hash(key);
+        for (auto& pair : table[index]) {
+            if (pair.first == key) {
+                pair.second = value;
                 return;
             }
-            index = (index + 1) % capacity;
         }
-
-        table[index].key = key;
-        table[index].value = value;
-        table[index].is_occupied = true;
-        table[index].is_deleted = false;
-        size++;
+        table[index].push_back({key, value});
     }
 
-    std::optional<V> find(const K& key) const {
-        size_t index = hash(key);
-        while (table[index].is_occupied) {
-            if (table[index].key == key && !table[index].is_deleted) {
-                return table[index].value;
-            }
-            index = (index + 1) % capacity;
-        }
-        return std::nullopt;
-    }
-
-    bool remove(const K& key) {
-        size_t index = hash(key);
-        while (table[index].is_occupied) {
-            if (table[index].key == key && !table[index].is_deleted) {
-                table[index].is_deleted = true;
-                size--;
+    bool get(const std::string& key, int& value) {
+        int index = hash(key);
+        for (const auto& pair : table[index]) {
+            if (pair.first == key) {
+                value = pair.second;
                 return true;
             }
-            index = (index + 1) % capacity;
         }
         return false;
     }
 
-    size_t get_size() const { return size; }
-    size_t get_capacity() const { return capacity; }
+    void remove(const std::string& key) {
+        int index = hash(key);
+        table[index].remove_if([&key](const auto& pair) {
+            return pair.first == key;
+        });
+    }
 };
 
 int main() {
-    HashTable<std::string, int> ht;
+    SimpleHashTable ht;
 
     ht.insert("apple", 5);
     ht.insert("banana", 7);
     ht.insert("cherry", 11);
 
-    std::cout << "Size: " << ht.get_size() << std::endl;
-    std::cout << "Capacity: " << ht.get_capacity() << std::endl;
-
-    if (auto value = ht.find("banana")) {
-        std::cout << "Value of 'banana': " << *value << std::endl;
+    int value;
+    if (ht.get("banana", value)) {
+        std::cout << "Value of 'banana': " << value << std::endl;
     } else {
         std::cout << "'banana' not found" << std::endl;
     }
 
     ht.remove("banana");
 
-    if (auto value = ht.find("banana")) {
-        std::cout << "Value of 'banana': " << *value << std::endl;
+    if (ht.get("banana", value)) {
+        std::cout << "Value of 'banana': " << value << std::endl;
     } else {
         std::cout << "'banana' not found" << std::endl;
     }
